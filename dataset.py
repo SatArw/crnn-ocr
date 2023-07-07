@@ -29,6 +29,7 @@ class lmdbDataset(Dataset):
             sys.exit(0)
 
         with self.env.begin(write=False) as txn:
+            str = 'num-samples'
             nSamples = int(txn.get('num-samples'))
             self.nSamples = nSamples
 
