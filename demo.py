@@ -8,7 +8,7 @@ import models.crnn as crnn
 
 
 model_path = './data/crnn.pth'
-img_path = './data/demo.png'
+img_path = './data/5_<>.jpg'
 alphabet = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 model = crnn.CRNN(32, 1, 37, 256)
@@ -29,6 +29,7 @@ image = Variable(image)
 
 model.eval()
 preds = model(image)
+print(preds.shape)
 
 _, preds = preds.max(2)
 preds = preds.transpose(1, 0).contiguous().view(-1)
