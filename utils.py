@@ -27,7 +27,7 @@ class strLabelConverter(object):
         self.dict = {}
         for i, char in enumerate(alphabet):
             # NOTE: 0 is reserved for 'blank' required by wrap_ctc
-            self.dict[char] = i + 1
+            self.dict[char] = i
 
     def encode(self, text):
         """Support batch or single str.
@@ -50,7 +50,9 @@ class strLabelConverter(object):
         elif isinstance(text, collections.Iterable):
             length = [len(s) for s in text]
             text = ''.join(text)
+            # print(text)
             text, _ = self.encode(text)
+            # print(text)
         return (torch.IntTensor(text), torch.IntTensor(length))
 
     def decode(self, t, length, raw=False):
@@ -137,6 +139,11 @@ def loadData(v, data):
     # print(v.shape)
     v.data.resize_(data.size()).copy_(data)
     # print(v.shape)
+
+def betterLoadData(data):
+    ret = torch.IntTensor(data.size())
+    ret.data.copy_(data)
+    return ret
 
 
 def prettyPrint(v):

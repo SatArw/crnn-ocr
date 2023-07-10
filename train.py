@@ -9,12 +9,13 @@ import torch.optim as optim
 import torch.utils.data
 from torch.autograd import Variable
 import numpy as np
-from warpctc_pytorch import CTCLoss
 import os
 import utils
 import dataset
 import models.crnn as crnn
 import re
+import torch.nn as nn
+
 
 #list of arguments that can be accepted by the program
 parser = argparse.ArgumentParser()
@@ -43,7 +44,6 @@ parser.add_argument('--keep_ratio', action='store_true', help='whether to keep r
 parser.add_argument('--manualSeed', type=int, default=1234, help='reproduce experiemnt')
 parser.add_argument('--random_sample', action='store_true', help='whether to sample the dataset with random sampler')
 opt = parser.parse_args()
-print(opt)
 
 if not os.path.exists(opt.expr_dir):
     os.makedirs(opt.expr_dir)
@@ -81,8 +81,7 @@ nclass = len(opt.alphabet) + 1
 nc = 1 #??
 
 converter = utils.strLabelConverter(opt.alphabet)
-criterion = CTCLoss()
-
+criterion = nn.CTCLoss()
 
 # custom weights initialization called on crnn
 def weights_init(m):
@@ -102,7 +101,7 @@ if opt.pretrained != '':
 print(crnn)
 
 image = torch.FloatTensor(opt.batchSize, 1, opt.imgH, opt.imgH)
-text = torch.IntTensor(opt.batchSize * 5)
+text = torch.IntTensor(opt.batchSize*3)
 length = torch.IntTensor(opt.batchSize)
 
 if opt.cuda:
@@ -129,8 +128,6 @@ else:
 
 
 def val(net, dataset, criterion, max_iter=100):
-    print('Start val')
-
     for p in crnn.parameters():
         p.requires_grad = False
 
@@ -178,27 +175,25 @@ def val(net, dataset, criterion, max_iter=100):
 def trainBatch(net, criterion, optimizer):
     data = next(train_iter)
     cpu_images, cpu_texts = data
-    # print("CPU images stats")
-    # print(type(cpu_images))
     batch_size = cpu_images.size(0)
     utils.loadData(image, cpu_images)
 
     new_texts = []
-    # print((cpu_texts))
     for i in range(len(cpu_texts)):
         lbl = re.search(r"'(.*?)'", cpu_texts[i])
-        # print(lbl)
         new_texts.append(lbl.group(1))
 
-    # print(new_texts)
     new_texts = tuple(new_texts)
     t, l = converter.encode(new_texts)
-    utils.loadData(text, t)
-    utils.loadData(length, l)
-    # print(image.shape)
+
+
+    textn = utils.betterLoadData(t)
+    lengthn = utils.betterLoadData(l)
+
     preds = crnn(image)
     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
-    cost = criterion(preds, text, preds_size, length) / batch_size
+
+    cost = criterion(preds, textn, preds_size, lengthn) / batch_size
     crnn.zero_grad()
     cost.backward()
     optimizer.step()
