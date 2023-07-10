@@ -8,7 +8,7 @@ import models.crnn as crnn
 
 
 model_path = './models/crnn.pth'
-img_path = './data/5_<>.jpg'
+img_path = './data/test/demo.png'
 alphabet = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 model = crnn.CRNN(32, 1, 37, 256)

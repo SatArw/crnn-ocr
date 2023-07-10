@@ -14,6 +14,7 @@ import os
 import utils
 import dataset
 import models.crnn as crnn
+import re
 
 #list of arguments that can be accepted by the program
 parser = argparse.ArgumentParser()
@@ -21,15 +22,15 @@ parser.add_argument('--trainRoot', required=True, help='path to dataset') #
 parser.add_argument('--valRoot', required=True, help='path to dataset') #
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2) 
 parser.add_argument('--batchSize', type=int, default=64, help='input batch size') 
-parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network') #
-parser.add_argument('--imgW', type=int, default=100, help='the width of the input image to network') #
+parser.add_argument('--imgH', type=int, default=160, help='the height of the input image to network') #
+parser.add_argument('--imgW', type=int, default=160, help='the width of the input image to network') #
 parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
 parser.add_argument('--nepoch', type=int, default=25, help='number of epochs to train for') #
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--pretrained', default='', help="path to pretrained model (to continue training)")
 parser.add_argument('--alphabet', type=str, default='0123456789abcdefghijklmnopqrstuvwxyz<>^$()-')
-parser.add_argument('--expr_dir', default='expr', help='Where to store samples and models') 
+parser.add_argument('--expr_dir', default='expr', help='Where to store samples and models')
 parser.add_argument('--displayInterval', type=int, default=500, help='Interval to be displayed') 
 parser.add_argument('--n_test_disp', type=int, default=10, help='Number of samples to display when test') 
 parser.add_argument('--valInterval', type=int, default=500, help='Interval to be displayed') 
@@ -67,13 +68,13 @@ else:
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=opt.batchSize,
-    shuffle=True, sampler=sampler,
+    shuffle=False, sampler=sampler,
     num_workers=int(opt.workers),
     collate_fn=dataset.alignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio=opt.keep_ratio))
 
 
 test_dataset = dataset.lmdbDataset(
-    root=opt.valroot)
+    root=opt.valRoot)
 
 #Number of classes (+1 if for none)
 nclass = len(opt.alphabet) + 1
@@ -100,7 +101,7 @@ if opt.pretrained != '':
     crnn.load_state_dict(torch.load(opt.pretrained))
 print(crnn)
 
-image = torch.FloatTensor(opt.batchSize, 3, opt.imgH, opt.imgH)
+image = torch.FloatTensor(opt.batchSize, 1, opt.imgH, opt.imgH)
 text = torch.IntTensor(opt.batchSize * 5)
 length = torch.IntTensor(opt.batchSize)
 
@@ -175,14 +176,26 @@ def val(net, dataset, criterion, max_iter=100):
 
 
 def trainBatch(net, criterion, optimizer):
-    data = train_iter.next()
+    data = next(train_iter)
     cpu_images, cpu_texts = data
+    # print("CPU images stats")
+    # print(type(cpu_images))
     batch_size = cpu_images.size(0)
     utils.loadData(image, cpu_images)
-    t, l = converter.encode(cpu_texts)
+
+    new_texts = []
+    # print((cpu_texts))
+    for i in range(len(cpu_texts)):
+        lbl = re.search(r"'(.*?)'", cpu_texts[i])
+        # print(lbl)
+        new_texts.append(lbl.group(1))
+
+    # print(new_texts)
+    new_texts = tuple(new_texts)
+    t, l = converter.encode(new_texts)
     utils.loadData(text, t)
     utils.loadData(length, l)
-
+    # print(image.shape)
     preds = crnn(image)
     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
     cost = criterion(preds, text, preds_size, length) / batch_size

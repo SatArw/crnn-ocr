@@ -28,13 +28,12 @@ class lmdbDataset(Dataset):
             print('cannot creat lmdb from %s' % (root))
             sys.exit(0)
 
-        with self.env.begin(write=False) as txn:
-            str = 'num-samples'
-            nSamples = int(txn.get('num-samples'))
-            self.nSamples = nSamples
+
+        self.nSamples = 11506 #hardcoded for now
 
         self.transform = transform
         self.target_transform = target_transform
+        # self.i = 0
 
     def __len__(self):
         return self.nSamples
@@ -44,22 +43,28 @@ class lmdbDataset(Dataset):
         index += 1
         with self.env.begin(write=False) as txn:
             img_key = 'image-%09d' % index
-            imgbuf = txn.get(img_key)
+            # print(img_key)
+            imgbuf = txn.get(img_key.encode())
 
-            buf = six.BytesIO()
-            buf.write(imgbuf)
-            buf.seek(0)
-            try:
-                img = Image.open(buf).convert('L')
-            except IOError:
-                print('Corrupted image for %d' % index)
-                return self[index + 1]
+            # buf = six.BytesIO()
+            # buf.write(imgbuf)
+            # buf.seek(0)
+            # try:
+            #     img = Image.open(buf).convert('L')
+            # except IOError:
+            #     print('Corrupted image for %d' % index)
+            #     return self[index + 1]
+            n_img = np.frombuffer(imgbuf)
 
+            img = Image.fromarray(n_img)
+            img = img.convert('L')
+            # img = Image.open(buf).convert('L')
+            # print(f"successfully loaded image {self.i}")
             if self.transform is not None:
                 img = self.transform(img)
 
             label_key = 'label-%09d' % index
-            label = str(txn.get(label_key))
+            label = str(txn.get(label_key.encode()))
 
             if self.target_transform is not None:
                 label = self.target_transform(label)
@@ -109,7 +114,7 @@ class randomSequentialSampler(sampler.Sampler):
 
 class alignCollate(object):
 
-    def __init__(self, imgH=32, imgW=100, keep_ratio=False, min_ratio=1):
+    def __init__(self, imgH=160, imgW=160, keep_ratio=False, min_ratio=1):
         self.imgH = imgH
         self.imgW = imgW
         self.keep_ratio = keep_ratio

@@ -39,6 +39,8 @@ class strLabelConverter(object):
             torch.IntTensor [length_0 + length_1 + ... length_{n - 1}]: encoded texts.
             torch.IntTensor [n]: length of each text.
         """
+        # print("called")
+        # print(text[0])
         if isinstance(text, str):
             text = [
                 self.dict[char.lower() if self._ignore_case else char]
@@ -131,7 +133,10 @@ def oneHot(v, v_length, nc):
 
 
 def loadData(v, data):
+    # print(type(data))
+    # print(v.shape)
     v.data.resize_(data.size()).copy_(data)
+    # print(v.shape)
 
 
 def prettyPrint(v):

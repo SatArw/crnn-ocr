@@ -21,15 +21,14 @@ class BidirectionalLSTM(nn.Module):
 
 
 class CRNN(nn.Module):
-
     def __init__(self, imgH, nc, nclass, nh, n_rnn=2, leakyRelu=False):
         super(CRNN, self).__init__()
         assert imgH % 16 == 0, 'imgH has to be a multiple of 16'
 
-        ks = [3, 3, 3, 3, 3, 3, 2]
-        ps = [1, 1, 1, 1, 1, 1, 0]
-        ss = [1, 1, 1, 1, 1, 1, 1]
-        nm = [64, 128, 256, 256, 512, 512, 512]
+        ks = [3, 3, 3, 3, 3, 3, 2, 2, 2, 2]  # kernel size
+        ps = [1, 1, 1, 1, 1, 1, 0, 0, 0, 0]  # padding size
+        ss = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]  # stride size
+        nm = [64, 128, 256, 256, 512, 512, 512, 512, 512, 512]  # number of filters learnt at each layer?
 
         cnn = nn.Sequential()
 
@@ -47,28 +46,38 @@ class CRNN(nn.Module):
                 cnn.add_module('relu{0}'.format(i), nn.ReLU(True))
 
         convRelu(0)
-        cnn.add_module('pooling{0}'.format(0), nn.MaxPool2d(2, 2))  # 64x16x64
+        cnn.add_module('pooling{0}'.format(0), nn.MaxPool2d(2, 2))  # 64x80x80
         convRelu(1)
-        cnn.add_module('pooling{0}'.format(1), nn.MaxPool2d(2, 2))  # 128x8x32
+        cnn.add_module('pooling{0}'.format(1), nn.MaxPool2d(2, 2))  # 128x40x40
         convRelu(2, True)
         convRelu(3)
         cnn.add_module('pooling{0}'.format(2),
-                       nn.MaxPool2d((2, 2), (2, 1), (0, 1)))  # 256x4x16
+                       nn.MaxPool2d((2, 2), (2, 1), (1, 0)))  # 256x20x40
         convRelu(4, True)
         convRelu(5)
         cnn.add_module('pooling{0}'.format(3),
-                       nn.MaxPool2d((2, 2), (2, 1), (0, 1)))  # 512x2x16
-        convRelu(6, True)  # 512x1x16
+                       nn.MaxPool2d((2, 2), (2, 1), (0, 1)))  # 512x10x41
+        convRelu(6, True)
+        convRelu(7)
+        cnn.add_module('pooling{0}'.format(4),
+                       nn.MaxPool2d((2, 2), (2, 1), (0, 1)))  # 512x5x41
+        convRelu(8, True)
+        convRelu(9)
+        cnn.add_module('pooling{0}'.format(5),
+                       nn.MaxPool2d((2, 2), (2, 1), (0, 1))) #512x3x41 ? 
 
         self.cnn = cnn
         self.rnn = nn.Sequential(
             BidirectionalLSTM(512, nh, nh),
             BidirectionalLSTM(nh, nh, nclass))
 
+
     def forward(self, input):
         # conv features
+        print(input.shape)
         conv = self.cnn(input)
         b, c, h, w = conv.size()
+        print(b,c,h,w)
         assert h == 1, "the height of conv must be 1"
         conv = conv.squeeze(2)
         conv = conv.permute(2, 0, 1)  # [w, b, c]
