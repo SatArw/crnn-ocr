@@ -43,23 +43,10 @@ class lmdbDataset(Dataset):
         index += 1
         with self.env.begin(write=False) as txn:
             img_key = 'image-%09d' % index
-            # print(img_key)
             imgbuf = txn.get(img_key.encode())
-
-            # buf = six.BytesIO()
-            # buf.write(imgbuf)
-            # buf.seek(0)
-            # try:
-            #     img = Image.open(buf).convert('L')
-            # except IOError:
-            #     print('Corrupted image for %d' % index)
-            #     return self[index + 1]
             n_img = np.frombuffer(imgbuf)
-
             img = Image.fromarray(n_img)
             img = img.convert('L')
-            # img = Image.open(buf).convert('L')
-            # print(f"successfully loaded image {self.i}")
             if self.transform is not None:
                 img = self.transform(img)
 

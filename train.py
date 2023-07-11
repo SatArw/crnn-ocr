@@ -15,6 +15,7 @@ import dataset
 import models.crnn as crnn
 import re
 import torch.nn as nn
+from tqdm import tqdm
 
 
 #list of arguments that can be accepted by the program
@@ -51,7 +52,6 @@ if not os.path.exists(opt.expr_dir):
 random.seed(opt.manualSeed)
 np.random.seed(opt.manualSeed)
 torch.manual_seed(opt.manualSeed)
-
 cudnn.benchmark = True
 
 if torch.cuda.is_available() and not opt.cuda:
@@ -200,9 +200,10 @@ def trainBatch(net, criterion, optimizer):
     return cost
 
 
-for epoch in range(opt.nepoch):
+for epoch in tqdm(range(opt.nepoch)):
     train_iter = iter(train_loader)
     i = 0
+    pbar = tqdm(desc = f"epoch-{epoch+1} progress",total = len(train_loader))
     while i < len(train_loader):
         for p in crnn.parameters():
             p.requires_grad = True
@@ -224,3 +225,27 @@ for epoch in range(opt.nepoch):
         if i % opt.saveInterval == 0:
             torch.save(
                 crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
+        pbar.update(1)
+    pbar.close()
+
+    # for it in tqdm(range(len(train_loader))):
+    #     for p in crnn.parameters():
+    #         p.requires_grad = True
+    #     crnn.train()
+
+    #     cost = trainBatch(crnn, criterion, optimizer)
+    #     loss_avg.add(cost)
+    #     i += 1
+
+    #     if i % opt.displayInterval == 0:
+    #         print('[%d/%d][%d/%d] Loss: %f' %
+    #               (epoch, opt.nepoch, i, len(train_loader), loss_avg.val()))
+    #         loss_avg.reset()
+
+    #     if i % opt.valInterval == 0:
+    #         val(crnn, test_dataset, criterion)
+
+    #     # do checkpointing
+    #     if i % opt.saveInterval == 0:
+    #         torch.save(
+    #             crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
