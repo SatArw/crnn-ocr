@@ -46,7 +46,7 @@ class strLabelConverter(object):
                 for char in text
             ]
             length = [len(text)]
-        elif isinstance(text, collections.Iterable):
+        elif isinstance(text, collections.abc.Iterable):
             length = [len(s) for s in text]
             text = ''.join(text)
             text, _ = self.encode(text)

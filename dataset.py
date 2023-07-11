@@ -49,6 +49,7 @@ class lmdbDataset(Dataset):
             imgbuf = txn.get(img_key.encode())
             np_array = np.frombuffer(imgbuf, dtype=np.uint8)
             np_array = np_array.reshape((160,160))
+            print(f"np_array for index {index}")
             img = Image.fromarray(np_array)
             
             if self.transform is not None:
@@ -60,7 +61,7 @@ class lmdbDataset(Dataset):
             if self.target_transform is not None:
                 label = self.target_transform(label)
 
-        return (img, label)
+        return (np_array, label)
 
 
 class resizeNormalize(object):
@@ -101,7 +102,6 @@ class randomSequentialSampler(sampler.Sampler):
 
     def __len__(self):
         return self.num_samples
-
 
 class alignCollate(object):
 

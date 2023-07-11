@@ -67,11 +67,15 @@ else:
 
 
 train_loader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=opt.batchSize,
+    train_dataset, batch_size=opt.batchSize,   
     shuffle=False, sampler=sampler,
     num_workers=int(opt.workers),
     collate_fn=dataset.alignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio=opt.keep_ratio))
 
+# train_loader = torch.utils.data.DataLoader(
+#     train_dataset, batch_size=opt.batchSize,
+#     shuffle=False, sampler=sampler,
+#     num_workers=int(opt.workers))
 
 test_dataset = dataset.lmdbDataset(
     root=opt.valRoot)
@@ -163,11 +167,13 @@ def val(net, dataset, criterion, max_iter=100):
         cost = criterion(preds, text, preds_size, length) / batch_size
         loss_avg.add(cost)
 
+        print(f"preds before that max {preds.size()}")
         _, preds = preds.max(2)
-        preds = preds.squeeze(2)
+        print(f"preds after that max {preds.size()}")
+        preds = preds.squeeze(-2)
         preds = preds.transpose(1, 0).contiguous().view(-1)
         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
-        for pred, target in zip(sim_preds, cpu_texts):
+        for pred, target in zip(sim_preds, new_texts):
             if pred == target.lower():
                 n_correct += 1
 
@@ -208,6 +214,8 @@ def trainBatch(net, criterion, optimizer):
     # print("---------")
     # print(f"Shape of Lengthn {length.size()}")
     # print(length,sum(length))
+
+    print("cost_call")
     
     cost = criterion(preds, text, preds_size, length) / batch_size
     # print(cost)

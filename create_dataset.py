@@ -34,10 +34,10 @@ def create_lmdb_dataset(image_dir, label_dir, output_path):
 
             # Store label in LMDB database
             label_key = 'label-%09d' % (i + 1)
-            txn.put(label_key.encode(), label.encode())
+            txn.put(label_key.encode(), label)
         total = f"{i+1}"
         print(total)
-        txn.put("num-samples".encode(),total.encode())
+        txn.put("num-samples".encode(),total)
     # Close the LMDB environment
     env.close()
 
