@@ -11,7 +11,7 @@ import six
 import sys
 from PIL import Image
 import numpy as np
-
+import io
 
 class lmdbDataset(Dataset):
 
@@ -44,9 +44,13 @@ class lmdbDataset(Dataset):
         with self.env.begin(write=False) as txn:
             img_key = 'image-%09d' % index
             imgbuf = txn.get(img_key.encode())
-            n_img = np.frombuffer(imgbuf)
-            img = Image.fromarray(n_img)
-            img = img.convert('L')
+            try:
+                np_array = np.frombuffer(imgbuf, dtype=np.uint8)
+                img = Image.fromarray(np_array)
+            except:
+                print(f"Image for index {index} could not be loaded, moving on")
+                return self[index + 1]
+            
             if self.transform is not None:
                 img = self.transform(img)
 
@@ -127,3 +131,5 @@ class alignCollate(object):
         images = torch.cat([t.unsqueeze(0) for t in images], 0)
 
         return images, labels
+
+

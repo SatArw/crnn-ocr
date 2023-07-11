@@ -31,9 +31,9 @@ parser.add_argument('--nepoch', type=int, default=25, help='number of epochs to 
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--pretrained', default='', help="path to pretrained model (to continue training)")
-parser.add_argument('--alphabet', type=str, default='0123456789abcdefghijklmnopqrstuvwxyz<>^$()-')
+parser.add_argument('--alphabet', type=str, default='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>^$()-_')
 parser.add_argument('--expr_dir', default='expr', help='Where to store samples and models')
-parser.add_argument('--displayInterval', type=int, default=500, help='Interval to be displayed') 
+parser.add_argument('--displayInterval', type=int, default=5, help='Interval to be displayed') 
 parser.add_argument('--n_test_disp', type=int, default=10, help='Number of samples to display when test') 
 parser.add_argument('--valInterval', type=int, default=500, help='Interval to be displayed') 
 parser.add_argument('--saveInterval', type=int, default=500, help='Interval to be displayed') 
@@ -98,7 +98,6 @@ crnn.apply(weights_init)
 if opt.pretrained != '':
     print('loading pretrained model from %s' % opt.pretrained)
     crnn.load_state_dict(torch.load(opt.pretrained))
-print(crnn)
 
 image = torch.FloatTensor(opt.batchSize, 1, opt.imgH, opt.imgH)
 text = torch.IntTensor(opt.batchSize*3)
@@ -142,14 +141,14 @@ def val(net, dataset, criterion, max_iter=100):
 
     max_iter = min(max_iter, len(data_loader))
     for i in range(max_iter):
-        data = val_iter.next()
+        data = next(val_iter)
         i += 1
         cpu_images, cpu_texts = data
         batch_size = cpu_images.size(0)
         utils.loadData(image, cpu_images)
         t, l = converter.encode(cpu_texts)
-        utils.loadData(text, t)
-        utils.loadData(length, l)
+        utils.betterLoadDataloadData(text, t)
+        utils.betterLoadDataloadData(length, l)
 
         preds = crnn(image)
         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
@@ -175,6 +174,7 @@ def val(net, dataset, criterion, max_iter=100):
 def trainBatch(net, criterion, optimizer):
     data = next(train_iter)
     cpu_images, cpu_texts = data
+    
     batch_size = cpu_images.size(0)
     utils.loadData(image, cpu_images)
 
@@ -187,20 +187,31 @@ def trainBatch(net, criterion, optimizer):
     t, l = converter.encode(new_texts)
 
 
-    textn = utils.betterLoadData(t)
-    lengthn = utils.betterLoadData(l)
+    text = utils.betterLoadData(t)
+    length = utils.betterLoadData(l)
 
     preds = crnn(image)
     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
 
-    cost = criterion(preds, textn, preds_size, lengthn) / batch_size
+    # print(f"Shape of Preds {preds.size()}")
+    # print(preds[0][0])
+    # print(f"preds size {len(preds_size)}")
+    # print("---------")
+    # print(f"Shape of textn {text.size()}")
+    # print(f"text= {text}")
+    # print("---------")
+    # print(f"Shape of Lengthn {length.size()}")
+    # print(length,sum(length))
+    
+    cost = criterion(preds, text, preds_size, length) / batch_size
+    # print(cost)
     crnn.zero_grad()
     cost.backward()
     optimizer.step()
     return cost
 
 
-for epoch in tqdm(range(opt.nepoch)):
+for epoch in (range(opt.nepoch)):
     train_iter = iter(train_loader)
     i = 0
     pbar = tqdm(desc = f"epoch-{epoch+1} progress",total = len(train_loader))
@@ -227,25 +238,3 @@ for epoch in tqdm(range(opt.nepoch)):
                 crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
         pbar.update(1)
     pbar.close()
-
-    # for it in tqdm(range(len(train_loader))):
-    #     for p in crnn.parameters():
-    #         p.requires_grad = True
-    #     crnn.train()
-
-    #     cost = trainBatch(crnn, criterion, optimizer)
-    #     loss_avg.add(cost)
-    #     i += 1
-
-    #     if i % opt.displayInterval == 0:
-    #         print('[%d/%d][%d/%d] Loss: %f' %
-    #               (epoch, opt.nepoch, i, len(train_loader), loss_avg.val()))
-    #         loss_avg.reset()
-
-    #     if i % opt.valInterval == 0:
-    #         val(crnn, test_dataset, criterion)
-
-    #     # do checkpointing
-    #     if i % opt.saveInterval == 0:
-    #         torch.save(
-    #             crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))

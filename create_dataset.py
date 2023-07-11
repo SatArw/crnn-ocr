@@ -19,8 +19,7 @@ def create_lmdb_dataset(image_dir, label_dir, output_path):
 
             # Read and preprocess image
             image = Image.open(image_path).convert('L')
-            image_data = np.array(image)
-            image_data = image_data.astype(np.uint8)
+            image_data = np.array(image).astype(np.uint8)
 
             # Generate unique key for the image
             key = 'image-%09d' % (i + 1)
@@ -40,8 +39,8 @@ def create_lmdb_dataset(image_dir, label_dir, output_path):
     env.close()
 
 # Example usage:
-image_dir = '/home/satarw/data_ocr/val_imgs'
-label_dir = '/home/satarw/data_ocr/val_lbl'
-output_path = './data/valid'
+image_dir = '/home/satarw/data_ocr/train_imgs'
+label_dir = '/home/satarw/data_ocr/train_lbl'
+output_path = './data/train'
 
 create_lmdb_dataset(image_dir, label_dir, output_path)
