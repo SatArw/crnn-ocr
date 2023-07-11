@@ -49,7 +49,7 @@ class lmdbDataset(Dataset):
                 img = Image.fromarray(np_array)
             except:
                 print(f"Image for index {index} could not be loaded, moving on")
-                return self[index + 1]
+                # return self[index + 1]
             
             if self.transform is not None:
                 img = self.transform(img)

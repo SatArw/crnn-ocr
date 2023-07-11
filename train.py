@@ -144,11 +144,19 @@ def val(net, dataset, criterion, max_iter=100):
         data = next(val_iter)
         i += 1
         cpu_images, cpu_texts = data
+        
         batch_size = cpu_images.size(0)
         utils.loadData(image, cpu_images)
-        t, l = converter.encode(cpu_texts)
-        utils.betterLoadDataloadData(text, t)
-        utils.betterLoadDataloadData(length, l)
+
+        new_texts = []
+        for i in range(len(cpu_texts)):
+            lbl = re.search(r"'(.*?)'", cpu_texts[i])
+            new_texts.append(lbl.group(1))
+
+        new_texts = tuple(new_texts)
+        t, l = converter.encode(new_texts)
+        text = utils.betterLoadData(t)
+        length = utils.betterLoadData(l)
 
         preds = crnn(image)
         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
@@ -185,8 +193,6 @@ def trainBatch(net, criterion, optimizer):
 
     new_texts = tuple(new_texts)
     t, l = converter.encode(new_texts)
-
-
     text = utils.betterLoadData(t)
     length = utils.betterLoadData(l)
 
