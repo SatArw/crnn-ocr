@@ -4,10 +4,11 @@ import six
 import sys
 import numpy as np
 from PIL import Image
+import torch
 
 def create_lmdb_dataset(image_dir, label_dir, output_path):
     # Create LMDB environment
-    env = lmdb.open(output_path, map_size=int(1e9))
+    env = lmdb.open(output_path, map_size=int(1e11))
 
     # Start write transaction
     with env.begin(write=True) as txn:
@@ -19,13 +20,13 @@ def create_lmdb_dataset(image_dir, label_dir, output_path):
 
             # Read and preprocess image
             image = Image.open(image_path).convert('L')
-            image_data = np.array(image).astype(np.uint8)
+            image_bytes = image.tobytes()
 
             # Generate unique key for the image
             key = 'image-%09d' % (i + 1)
 
             # Store image in LMDB database
-            txn.put(key.encode(), image_data)
+            txn.put(key.encode(), image_bytes)
 
             # Read label from label file
             with open(label_path, 'r') as label_file:
@@ -34,13 +35,15 @@ def create_lmdb_dataset(image_dir, label_dir, output_path):
             # Store label in LMDB database
             label_key = 'label-%09d' % (i + 1)
             txn.put(label_key.encode(), label.encode())
-
+        total = f"{i+1}"
+        print(total)
+        txn.put("num-samples".encode(),total.encode())
     # Close the LMDB environment
     env.close()
 
 # Example usage:
-image_dir = '/home/satarw/data_ocr/train_imgs'
-label_dir = '/home/satarw/data_ocr/train_lbl'
-output_path = './data/train'
+image_dir = '/home/satarw/data_ocr/val_imgs'
+label_dir = '/home/satarw/data_ocr/val_lbl'
+output_path = './data/valid'
 
 create_lmdb_dataset(image_dir, label_dir, output_path)

@@ -29,7 +29,10 @@ class lmdbDataset(Dataset):
             sys.exit(0)
 
 
-        self.nSamples = 11506 #hardcoded for now
+        with self.env.begin(write=False) as txn:
+            nSamples = int(txn.get('num-samples'.encode()))
+            self.nSamples = nSamples
+            print(f"Total images in this database = {self.nSamples}")
 
         self.transform = transform
         self.target_transform = target_transform
@@ -44,12 +47,9 @@ class lmdbDataset(Dataset):
         with self.env.begin(write=False) as txn:
             img_key = 'image-%09d' % index
             imgbuf = txn.get(img_key.encode())
-            try:
-                np_array = np.frombuffer(imgbuf, dtype=np.uint8)
-                img = Image.fromarray(np_array)
-            except:
-                print(f"Image for index {index} could not be loaded, moving on")
-                # return self[index + 1]
+            np_array = np.frombuffer(imgbuf, dtype=np.uint8)
+            np_array = np_array.reshape((160,160))
+            img = Image.fromarray(np_array)
             
             if self.transform is not None:
                 img = self.transform(img)
