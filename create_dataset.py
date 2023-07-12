@@ -34,16 +34,16 @@ def create_lmdb_dataset(image_dir, label_dir, output_path):
 
             # Store label in LMDB database
             label_key = 'label-%09d' % (i + 1)
-            txn.put(label_key.encode(), label)
+            txn.put(label_key.encode(), label.encode())
         total = f"{i+1}"
         print(total)
-        txn.put("num-samples".encode(),total)
+        txn.put("num-samples".encode(),total.encode())
     # Close the LMDB environment
     env.close()
 
 # Example usage:
-image_dir = '/home/satarw/data_ocr/val_imgs'
-label_dir = '/home/satarw/data_ocr/val_lbl'
-output_path = './data/valid'
+image_dir = '/home/satarw/data_ocr/train_imgs'
+label_dir = '/home/satarw/data_ocr/train_lbl'
+output_path = './data/train'
 
 create_lmdb_dataset(image_dir, label_dir, output_path)

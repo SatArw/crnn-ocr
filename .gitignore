@@ -5,4 +5,7 @@
 *.log
 *.tmp
 data/
-
+t_data/
+.vscode/
+__pychache__/
+expr/

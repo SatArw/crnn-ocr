@@ -49,7 +49,6 @@ class lmdbDataset(Dataset):
             imgbuf = txn.get(img_key.encode())
             np_array = np.frombuffer(imgbuf, dtype=np.uint8)
             np_array = np_array.reshape((160,160))
-            print(f"np_array for index {index}")
             img = Image.fromarray(np_array)
             
             if self.transform is not None:

@@ -69,8 +69,7 @@ else:
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=opt.batchSize,   
     shuffle=False, sampler=sampler,
-    num_workers=int(opt.workers),
-    collate_fn=dataset.alignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio=opt.keep_ratio))
+    num_workers=int(opt.workers))
 
 # train_loader = torch.utils.data.DataLoader(
 #     train_dataset, batch_size=opt.batchSize,
@@ -167,9 +166,7 @@ def val(net, dataset, criterion, max_iter=100):
         cost = criterion(preds, text, preds_size, length) / batch_size
         loss_avg.add(cost)
 
-        print(f"preds before that max {preds.size()}")
         _, preds = preds.max(2)
-        print(f"preds after that max {preds.size()}")
         preds = preds.squeeze(-2)
         preds = preds.transpose(1, 0).contiguous().view(-1)
         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
@@ -178,7 +175,7 @@ def val(net, dataset, criterion, max_iter=100):
                 n_correct += 1
 
     raw_preds = converter.decode(preds.data, preds_size.data, raw=True)[:opt.n_test_disp]
-    for raw_pred, pred, gt in zip(raw_preds, sim_preds, cpu_texts):
+    for raw_pred, pred, gt in zip(raw_preds, sim_preds, new_texts):
         print('%-20s => %-20s, gt: %-20s' % (raw_pred, pred, gt))
 
     accuracy = n_correct / float(max_iter * opt.batchSize)
