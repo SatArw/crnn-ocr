@@ -4,4 +4,6 @@
 *.pyo
 *.log
 *.tmp
+data/
+expr/
 
